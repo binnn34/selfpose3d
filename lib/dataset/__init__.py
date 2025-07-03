@@ -16,3 +16,5 @@ from dataset.shelf import Shelf as shelf
 from dataset.shelf_ssv import shelf_ssv as shelf_ssv
 from dataset.campus import Campus as campus
 from dataset.campus_ssv import campus_ssv as campus_ssv
+from .dance1 import dance1
+

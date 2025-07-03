@@ -60,8 +60,8 @@ def main():
     console = logging.StreamHandler()
     logging.getLogger('').addHandler(console)                        
 
-    gpus = [int(i) for i in config.GPUS.split(',')]
-    #gpus = [0]
+    #gpus = [int(i) for i in config.GPUS.split(',')]
+    gpus = []
     print('=> Loading data ..')
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -75,7 +75,7 @@ def main():
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=config.TEST.BATCH_SIZE * len(gpus),
+        batch_size=config.TEST.BATCH_SIZE * 1,
         shuffle=False,
         num_workers=config.WORKERS,
         pin_memory=True)
@@ -88,16 +88,26 @@ def main():
     model = eval('models.' + config.MODEL + '.get_multi_person_pose_net')(
         config, is_train=True)
     with torch.no_grad():
-        model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+        #model = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+        model = model.to('cpu')
 
-    if os.path.isfile(args.test_file):
-        test_model_file = args.test_file
-    else:
-        test_model_file = os.path.join(final_output_dir, config.TEST.MODEL_FILE)
+    #if os.path.isfile(args.test_file):
+        #test_model_file = args.test_file
+    #else:
+        #test_model_file = os.path.join(final_output_dir, config.TEST.MODEL_FILE)
+    
+    test_model_file = args.test_file
     logger.info('=> test_model_file {}'.format(test_model_file))
-    if config.TEST.MODEL_FILE and os.path.isfile(test_model_file):
+
+    #if config.TEST.MODEL_FILE and os.path.isfile(test_model_file):
+    if os.path.isfile(test_model_file):
         logger.info('=> load models state {}'.format(test_model_file))
-        model.module.load_state_dict(torch.load(test_model_file))
+        #model.module.load_state_dict(torch.load(test_model_file))
+        ckpt = torch.load(test_model_file, map_location='cpu')
+        if 'state_dict' in ckpt:
+            model.load_state_dict(ckpt['state_dict'])
+        else:
+            model.load_state_dict(ckpt)
     else:
         raise ValueError('Check the model file for testing!')
 

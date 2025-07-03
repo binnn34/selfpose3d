@@ -3,11 +3,12 @@ import numpy as np
 import pickle
 import os
 import torch
+import argparse
 from tqdm import tqdm
 from matplotlib import colors
 from copy import deepcopy
 from munkres import Munkres
-from vedo import Points, Lines, Picture, show, Mesh, Point, Light, Plane, Arrows
+from vedo import Points, Lines, Picture, show, Mesh, Point, Light, Plane, Arrows, Plotter
 import colorcet
 import _init_paths
 import subprocess
@@ -17,7 +18,14 @@ from utils.transforms import affine_transform_pts_cuda as do_transform
 import utils.cameras as cameras
 from utils.vis import COLORS, JOINTS_DEF, LIMBS15, LIMBS15_COLORS
 
-PRED_FILE = "./results_publ/cam5_evaluation/predictions_dump_interval3.pkl"
+parser = argparse.ArgumentParser()
+parser.add_argument("--pred", type=str, required=True, help="Path to predictions .pkl file")
+parser.add_argument("--cfg", type=str, required=False)
+args = parser.parse_args()
+
+PRED_FILE = args.pred
+
+#PRED_FILE = "./results_publ/cam5_evaluation/predictions_dump_interval3.pkl"
 
 PRED_MESHES_DIR = (
     "./results/adaptOR3D/demo_out/run_07_frozen_ssv_rootnet_syn_posessv"
@@ -32,24 +40,10 @@ RENDER_DIR = "./results/adaptOR3D/run_14_1_train_backbone_frozen_rootnet_syn_pos
 RENDER_DIR = "./results/adaptOR3D/panoptic_multiperson_poseresnet50_prn64_cpn80x80x20_960x512_cam5/vis_results_3d"
 RENDER_DIR = "./results/adaptOR3D/run_14_1_train_backbone_frozen_rootnet_syn_posessv_pseudo_hrnet_soft/vis_seqs/v3"
 
-KEYNAMES = [
-    "160906_ian5_00_03_00001077",
-    "160906_ian5_00_03_00001665",
-    "160906_ian5_00_03_00002841",
-    "160906_band4_00_03_00000329",
-    "160906_pizza1_00_03_00000424",
-    "160906_pizza1_00_03_00006592",
-    "160906_pizza1_00_03_00006400",
-    "160422_haggling1_00_03_00000749",
-    "160422_haggling1_00_03_00001553",
-    "160422_haggling1_00_03_00001733",
-    "160422_haggling1_00_03_00001745",
-    "160422_haggling1_00_03_00001829",
-]
-KEYNAMES = ["160906_pizza1_00_03_00000424", "160906_pizza1_00_03_00006592"]
+KEYNAMES = []
 
 SEQUENCE_NAMES = [
-    "160906_pizza1"
+    "170407_haggling_b3"
 ]  # "160906_pizza1", "160422_haggling1", "160906_ian5", "160906_band4"
 DRAW_SUBSET_MESHES = False
 NUMBER_UPDATE_DRAW = 30
@@ -68,6 +62,14 @@ MESH_KEYS = [
     #"160906_ian5_00_03_00002997"
 ]
 
+global_plotter = None
+
+tmp_plotter = Plotter(offscreen=True)
+tmp_plotter.camera.SetPosition(6000.0, 4000.0, 6000.0)
+tmp_plotter.camera.SetFocalPoint(0.0, 10.0, 1000.0)
+tmp_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
+
+VIRTUAL_CAM2 = tmp_plotter.camera
 
 IMAGE_SIZE = [960, 512]
 MAX_WIDTH_HEIGHT = 1920
@@ -259,48 +261,69 @@ def images_to_vedo(images):
     for ii, im in enumerate(images):
         vedo_im = (
             Picture(im)
-            .rotate_x(X_ROTATE[ii])
-            .rotate_y(Y_ROTATE[ii])
-            .rotate_z(Z_ROTATE[ii])
+            .rotateX(X_ROTATE[ii])
+            .rotateY(Y_ROTATE[ii])
+            .rotateZ(Z_ROTATE[ii])
         )
         vedo_im.z(Z_TRANS[ii]).y(Y_TRANS[ii]).x(X_TRANS[ii]).scale(SCALE[ii])
         vedo_pics.append(vedo_im)
     return vedo_pics
 
 
+#def get_vedo_points_and_lines(preds):
+#    pts_pred, lines_pred = None, None
+#    for n in range(len(preds)):
+#        pts_start, pts_end = [], []
+#        for k in eval("LIMBS{}".format(NUM_JOINTS)):
+#            pts_start.append(
+#                (preds[n][k[0], 0], preds[n][k[0], 1], preds[n][k[0], 2])
+#            )
+#            pts_end.append(
+#                (preds[n][k[1], 0], preds[n][k[1], 1], preds[n][k[1], 2])
+#            )
+#        if n == 0:
+#            pts_pred = Points(preds[n][..., :3], c="w", r=5, alpha=0.90)
+#            lines_pred = Arrows(
+#                pts_start,
+#                pts_end,
+#                c=COLORS[int(n % 10)],
+#                # lw=6,
+#                res=200,
+#                alpha=0.9,
+#                thickness=6,
+#            )
+#        else:
+#            pts_pred += Points(preds[n][..., :3], c="w", r=5, alpha=0.9)
+#            lines_pred += Arrows(
+#                pts_start,
+#                pts_end,
+#                c=COLORS[int(n % 10)],
+#                # lw=6,
+#                res=200,
+#                alpha=0.9,
+#                thickness=6,
+#            )
+#
+#    return pts_pred, lines_pred
+
+###################추가########################
 def get_vedo_points_and_lines(preds):
     pts_pred, lines_pred = None, None
     for n in range(len(preds)):
         pts_start, pts_end = [], []
         for k in eval("LIMBS{}".format(NUM_JOINTS)):
-            pts_start.append(
-                (preds[n][k[0], 0], preds[n][k[0], 1], preds[n][k[0], 2])
-            )
-            pts_end.append(
-                (preds[n][k[1], 0], preds[n][k[1], 1], preds[n][k[1], 2])
-            )
+            pts_start.append((preds[n][k[0], 0], preds[n][k[0], 1], preds[n][k[0], 2]))
+            pts_end.append((preds[n][k[1], 0], preds[n][k[1], 1], preds[n][k[1], 2]))
+
+        # ⬇ 각 사람마다 고유 색상 적용
+        joint_color = COLORS[n % len(COLORS)]
+
         if n == 0:
-            pts_pred = Points(preds[n][..., :3], c="w", r=5, alpha=0.90)
-            lines_pred = Arrows(
-                pts_start,
-                pts_end,
-                c=COLORS[int(n % 10)],
-                # lw=6,
-                res=200,
-                alpha=0.9,
-                thickness=6,
-            )
+            pts_pred = Points(preds[n][:, :3], c=joint_color, r=5, alpha=0.90)
+            lines_pred = Arrows(pts_start, pts_end, c=joint_color, res=200, alpha=0.9, thickness=6)
         else:
-            pts_pred += Points(preds[n][..., :3], c="w", r=5, alpha=0.9)
-            lines_pred += Arrows(
-                pts_start,
-                pts_end,
-                c=COLORS[int(n % 10)],
-                # lw=6,
-                res=200,
-                alpha=0.9,
-                thickness=6,
-            )
+            pts_pred += Points(preds[n][:, :3], c=joint_color, r=5, alpha=0.9)
+            lines_pred += Arrows(pts_start, pts_end, c=joint_color, res=200, alpha=0.9, thickness=6)
 
     return pts_pred, lines_pred
 
@@ -354,40 +377,78 @@ def get_lights():
     return l1, l2, l3, l4
 
 
-def render_results(
-    vedo_pics_preds,
-    camera,
-    points=None,
-    lines=None,
-    mesh_objs=None,
-    offscreen=True,
-    interactive=False,
-):
-    assert NUM_CAMS == 5, "Number of cams not supported"
+#def render_results(
+    #vedo_pics_preds,
+    #camera,
+    #points=None,
+    #lines=None,
+    #mesh_objs=None,
+    #offscreen=True,
+    #interactive=False,
+#):
+    #assert NUM_CAMS == 5, "Number of cams not supported"
+    #l1, l2, l3, l4 = get_lights()
+    #plt_obj = show(
+    #    mesh_objs,
+    #    vedo_pics_preds[0],
+    #    vedo_pics_preds[1],
+    #    vedo_pics_preds[2],
+    #    vedo_pics_preds[3],
+    #    vedo_pics_preds[4],
+    #    points,
+    #    lines,
+    #    l1,
+    #    l2,
+    #    l3,
+    #    l4,
+    #    axes=AXES_OPTS,
+    #    bg="white",
+    #    # bg2="bb",
+    #    offscreen=offscreen,
+    #    interactive=interactive,
+    #    zoom=1,
+    #    camera=camera,
+    #    size=(1920, 1080),
+    #)
+    #return plt_obj
+
+#def render_with_single_plotter(pics, points=None, lines=None, out_path=None, frame_idx=0):
+#    global global_plotter
+#    global_plotter.clear()
+#    azimuth_angle = AZM_UPDATE * frame_idx  # 누적된 회전각
+#    global_plotter.camera.Azimuth(azimuth_angle)
+#    l1, l2, l3, l4 = get_lights()
+#    global_plotter.show(
+#        *(pics + [points, lines, l1, l2, l3, l4]),
+#        axes=AXES_OPTS,
+#        camera=global_plotter.camera,
+#        zoom=1,
+#        interactive=False,
+#        resetcam=False,
+#    )
+#    if out_path:
+#        global_plotter.screenshot(out_path)
+#        global_plotter.clear()   ###################추가########################
+
+
+def render_with_single_plotter(pics, points=None, lines=None, out_path=None):
+    global global_plotter
+
+    # ❗ 카메라 회전은 누적 적용 (무한 회전 허용)
+    global_plotter.camera.Azimuth(AZM_UPDATE)
+
     l1, l2, l3, l4 = get_lights()
-    plt_obj = show(
-        mesh_objs,
-        vedo_pics_preds[0],
-        vedo_pics_preds[1],
-        vedo_pics_preds[2],
-        vedo_pics_preds[3],
-        vedo_pics_preds[4],
-        points,
-        lines,
-        l1,
-        l2,
-        l3,
-        l4,
+    global_plotter.show(
+        *(pics + [points, lines, l1, l2, l3, l4]),
         axes=AXES_OPTS,
-        bg="white",
-        # bg2="bb",
-        offscreen=offscreen,
-        interactive=interactive,
+        camera=global_plotter.camera,
         zoom=1,
-        camera=camera,
-        size=(1920, 1080),
+        interactive=False,
+        resetcam=False,
     )
-    return plt_obj
+
+    if out_path:
+        global_plotter.screenshot(out_path)
 
 
 def write_2d_poses(
@@ -491,6 +552,12 @@ def get_mesh_objs_preds(preds, i, meshes_keys_pred, meshkey_to_dir_pred):
 
 
 def render_sequence(SEQUENCE_NAME):
+    global global_plotter
+    global_plotter = Plotter(offscreen=True, bg="white", size=(1920, 1080))
+    global_plotter.camera.SetPosition(6000.0, 4000.0, 6000.0)
+    global_plotter.camera.SetFocalPoint(0.0, 10.0, 1000.0)
+    global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
+
     preds = pickle.load(open(PRED_FILE, "rb"))
     if USE_TRACKER:
         preds = track_3dposes(preds, SEQUENCE_NAME)
@@ -506,8 +573,15 @@ def render_sequence(SEQUENCE_NAME):
         }
 
     first_cam = True
-    counter_img = 0
+    counter_img = 0           ###################추가########################
     for i in tqdm(range(num_images), desc="rendering results"):
+        if counter_img % 100 == 0 and counter_img != 0:
+            global_plotter.close()
+            #global_plotter = Plotter(offscreen=True, bg="white", size=(1920, 1080))
+            global_plotter.camera.SetPosition(6000.0, 4000.0, 6000.0)
+            global_plotter.camera.SetFocalPoint(0.0, 10.0, 1000.0)
+            global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)              ###################추가########################
+
         out_dir_name = os.path.join(RENDER_DIR, SEQUENCE_NAME, "preds_3d_poses")
         out_dir_name_mesh = os.path.join(RENDER_DIR, SEQUENCE_NAME, "preds_3d_meshes")
 
@@ -526,27 +600,32 @@ def render_sequence(SEQUENCE_NAME):
                 preds[i * NUM_CAMS]["key"] if not DRAW_SUBSET_MESHES else f'{counter_img:06d}',
             )
             os.makedirs(os.path.dirname(out_filename_pose), exist_ok=True)
-            plt_obj = render_results(
+            render_with_single_plotter(
                 vedo_pics_preds,
-                camera=VIRTUAL_CAM if first_cam else VIRTUAL_CAM2,
                 points=pts_pred,
                 lines=lines_pred,
+                out_path=out_filename_pose,
+                frame_idx=counter_img,
             )
-            VIRTUAL_CAM2 = plt_obj.camera
-            plt_obj.screenshot(out_filename_pose).close()
+            global_plotter.camera.Azimuth(AZM_UPDATE)
+            global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
+
             if DRAW_SUBSET_MESHES:
                 if DRAW_PRED_MESHES and mesh_objs_preds is not None:
                     for pp in range(NUMBER_UPDATE_DRAW):
                         counter_img += 1
                         out_filename_mesh = os.path.join(out_dir_name, f'{counter_img:06d}')
                         os.makedirs(out_dir_name, exist_ok=True)
-                        plt_obj = render_results(
+                        render_with_single_plotter(
                             vedo_pics_preds,
-                            camera=VIRTUAL_CAM if first_cam else VIRTUAL_CAM2,
-                            mesh_objs=mesh_objs_preds,
+                            points=pts_pred,
+                            lines=lines_pred,
+                            out_path=out_filename_pose,
+                            frame_idx=counter_img,
                         )
-                        plt_obj.screenshot(out_filename_mesh).close()
-                        VIRTUAL_CAM2.Azimuth(-0.8)
+                        global_plotter.camera.Azimuth(AZM_UPDATE)
+                        global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
+                        #VIRTUAL_CAM2.Azimuth(-0.8)
             else:
                 if DRAW_PRED_MESHES and mesh_objs_preds is not None:                    
                     os.makedirs(out_dir_name_mesh, exist_ok=True)
@@ -556,23 +635,25 @@ def render_sequence(SEQUENCE_NAME):
                             preds, i, meshes_keys_pred, meshkey_to_dir_pred
                         )                        
                         os.makedirs(out_dir_name_mesh, exist_ok=True)
-                        plt_obj = render_results(
+                        render_with_single_plotter(
                             vedo_pics_preds,
-                            camera=VIRTUAL_CAM if first_cam else VIRTUAL_CAM2,
-                            mesh_objs=mesh_objs_preds,
+                            points=pts_pred,
+                            lines=lines_pred,
+                            out_path=out_filename_mesh,
+                            frame_idx=counter_img,
                         )
-                        plt_obj.screenshot(out_filename_mesh).close()
+                        global_plotter.camera.Azimuth(AZM_UPDATE)
+                        global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
         else:
-            plt_obj = render_results(
+            render_with_single_plotter(
                 vedo_pics_preds,
-                camera=VIRTUAL_CAM if first_cam else VIRTUAL_CAM2,
                 points=pts_pred,
                 lines=lines_pred,
-                mesh_objs=mesh_objs_preds,
-                offscreen=False,
-                interactive=True,
+                out_path=None,  # 화면에만 띄움
             )
-            plt_obj.close()
+            global_plotter.camera.Azimuth(AZM_UPDATE)
+            global_plotter.camera.SetViewUp(0.0, 0.0, 1.0)
+            #plt_obj.close()
 
         first_cam = False
         counter_img += 1

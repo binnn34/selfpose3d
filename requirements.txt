@@ -1,13 +1,108 @@
-tqdm
-json-tricks
-torch
-opencv-python
-prettytable
-scipy
-torchvision
-numpy
-matplotlib
-easydict
-PyYAML
-tensorboardX
-vedo
+absl-py==2.2.2
+aiohappyeyeballs==2.6.1
+aiohttp==3.11.18
+aiosignal==1.3.2
+antlr4-python3-runtime==4.9.3
+async-timeout==5.0.1
+attrs==25.3.0
+autobahn==24.4.2
+Automat==25.4.16
+black==25.1.0
+Brotli @ file:///C:/b/abs_c415aux9ra/croot/brotli-split_1736182803933/work
+certifi @ file:///C:/b/abs_3beajm7umk/croot/certifi_1745939228545/work/certifi
+cffi==1.17.1
+charset-normalizer @ file:///croot/charset-normalizer_1721748349566/work
+click==8.1.8
+cloudpickle==3.1.1
+colorama==0.4.6
+colorcet==3.1.0
+constantly==23.10.4
+contourpy==1.3.0
+cryptography==44.0.2
+cycler==0.12.1
+Cython==3.1.1
+Deprecated==1.2.18
+# Editable Git install with no remote (detectron2==0.6)
+-e d:\detectron2
+easydict==1.13
+fonttools==4.57.0
+frozenlist==1.6.0
+fvcore==0.1.5.post20221221
+gitdb==4.0.12
+GitPython==3.1.44
+grpcio==1.71.0
+hydra-core==1.3.2
+hyperlink==21.0.0
+idna @ file:///C:/b/abs_aad84bnnw5/croot/idna_1714398896795/work
+importlib_metadata==8.7.0
+importlib_resources==6.5.2
+incremental==24.7.2
+iopath==0.1.9
+json-tricks==3.17.3
+kiwisolver==1.4.7
+Markdown==3.8
+MarkupSafe==3.0.2
+matplotlib==3.9.4
+mkl-service==2.4.0
+mkl_fft @ file:///C:/Users/dev-admin/mkl/mkl_fft_1730823082242/work
+mkl_random @ file:///C:/Users/dev-admin/mkl/mkl_random_1730822522280/work
+msgpack==1.1.0
+multidict==6.4.3
+munkres==1.1.4
+mypy_extensions==1.1.0
+numpy==1.23.5
+omegaconf==2.3.0
+opencv-python==4.11.0.86
+packaging==25.0
+pandas==2.2.3
+pathspec==0.12.1
+pillow @ file:///C:/b/abs_68t826txdy/croot/pillow_1744613085333/work
+platformdirs==4.3.8
+portalocker==3.1.1
+prettytable==3.16.0
+propcache==0.3.1
+protobuf==6.30.2
+psutil==7.0.0
+py-cpuinfo==9.0.0
+pycocotools==2.0.8
+pycparser==2.22
+Pygments==2.19.1
+pyparsing==3.2.3
+PySocks @ file:///C:/ci/pysocks_1605307512533/work
+python-dateutil==2.9.0.post0
+pytz==2025.2
+pywin32==310
+PyYAML==6.0.2
+requests @ file:///C:/b/abs_c3508vg8ez/croot/requests_1731000584867/work
+scipy==1.13.1
+seaborn==0.13.2
+six==1.17.0
+smmap==5.0.2
+tabulate==0.9.0
+tensorboard==2.19.0
+tensorboard-data-server==0.7.2
+tensorboardX==2.6.2.2
+termcolor==3.1.0
+thop==0.1.1.post2209072238
+tomli==2.2.1
+torch==1.13.1
+torchvision==0.14.1
+tqdm==4.67.1
+Twisted==24.11.0
+txaio==23.1.1
+typing_extensions @ file:///C:/b/abs_0ffjxtihug/croot/typing_extensions_1734714875646/work
+tzdata==2025.2
+ultralytics==8.3.143
+ultralytics-thop==2.0.14
+urllib3 @ file:///C:/b/abs_7bst06lizn/croot/urllib3_1737133657081/work
+vedo==2022.1.0
+vtk==9.0.3
+wcwidth==0.2.13
+Werkzeug==3.1.3
+win-inet-pton @ file:///C:/ci/win_inet_pton_1605306162074/work
+wrapt==1.17.2
+wslink==2.3.3
+yacs==0.1.8
+yarl==1.20.0
+zipp==3.21.0
+zope.interface==7.2

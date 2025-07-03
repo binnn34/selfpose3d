@@ -69,7 +69,7 @@ def train_3d_ssv(config, model, optimizer, loader, epoch, output_dir, writer_dic
     ) in enumerate(loader):
         data_time.update(time.time() - end)
 
-        if "panoptic" in config.DATASET.TEST_DATASET or "shelf" in config.DATASET.TEST_DATASET or "campus" in config.DATASET.TEST_DATASET:
+        if "panoptic" in config.DATASET.TEST_DATASET or "shelf" in config.DATASET.TEST_DATASET or "campus" in config.DATASET.TEST_DATASET or "dance1" in config.DATASET.TEST_DATASET:
             pred2, heatmaps3, grid_centers, loss_dict = model(
                 views1=inputs1,
                 meta1=meta1,
@@ -176,8 +176,16 @@ def train_3d_ssv(config, model, optimizer, loader, epoch, output_dir, writer_dic
             for k in range(len(inputs3)):
                 view_name = "view_{}".format(k + 1)
                 prefix = "{}_{:08}_{}".format(os.path.join(output_dir, "train"), i, view_name)
+
+                # ✅ meta 재구성
+                meta_vis = {
+                    "joints_2d": meta[k]["joints_2d"],
+                    "joints_2d_vis": meta[k]["joints_2d_vis"],
+                    "num_person": meta[k]["num_person"],
+                }
+
                 save_debug_images_multi(
-                    config, inputs3[k], meta3[k], targets_2d3[k], heatmaps3[k], prefix
+                    config, inputs3[k], meta_vis, targets_2d3[k], heatmaps3[k], prefix
                 )
 
             prefix = "{}_{:03}".format(os.path.join(output_dir, "train"), i)
@@ -243,7 +251,7 @@ def train_3d(config, model, optimizer, loader, epoch, output_dir, writer_dict):
     ) in enumerate(loader):
         data_time.update(time.time() - end)
 
-        if "panoptic" in config.DATASET.TEST_DATASET or "shelf" in config.DATASET.TEST_DATASET:
+        if any(x in config.DATASET.TEST_DATASET for x in ["panoptic", "shelf", "campus", "dance1"]):
             if config.NETWORK.TRAIN_ONLY_2D:
                 loss_2d, heatmaps = model(
                     views=inputs,
@@ -260,10 +268,8 @@ def train_3d(config, model, optimizer, loader, epoch, output_dir, writer_dict):
                     weights_2d=weights_2d,
                     targets_3d=targets_3d[0],
                 )
-        elif "campus" in config.DATASET.TEST_DATASET:
-            pred, heatmaps, grid_centers, loss_2d, loss_3d, loss_cord = model(
-                meta=meta, targets_3d=targets_3d[0], input_heatmaps=input_heatmap
-            )
+        else:
+            raise ValueError(f"Unsupported TEST_DATASET '{config.DATASET.TEST_DATASET}'")
 
         if config.NETWORK.TRAIN_ONLY_2D:
             loss_2d = loss_2d.mean()
@@ -278,6 +284,9 @@ def train_3d(config, model, optimizer, loader, epoch, output_dir, writer_dict):
             losses_cord.update(loss_cord.item())
             loss = loss_2d + loss_3d + loss_cord
             losses.update(loss.item())
+
+        for name, l in zip(["2D", "3D", "cord"], [loss_2d, loss_3d, loss_cord]):
+            print(f"loss_{name}: requires_grad={l.requires_grad}, grad_fn={l.grad_fn}, type={type(l)}")
 
         optimizer.zero_grad()
         loss.backward()
@@ -336,8 +345,16 @@ def train_3d(config, model, optimizer, loader, epoch, output_dir, writer_dict):
             for k in range(len(inputs)):
                 view_name = "view_{}".format(k + 1)
                 prefix = "{}_{:08}_{}".format(os.path.join(output_dir, "train"), i, view_name)
+
+                # ✅ meta 재구성
+                meta_vis = {
+                    "joints_2d": meta[k]["joints_2d"],
+                    "joints_2d_vis": meta[k]["joints_2d_vis"],
+                    "num_person": meta[k]["num_person"],
+                }
+
                 save_debug_images_multi(
-                    config, inputs[k], meta[k], targets_2d[k], heatmaps[k], prefix
+                    config, inputs[k], meta_vis, targets_2d[k], heatmaps[k], prefix
                 )
             prefix2 = "{}_{:08}".format(os.path.join(output_dir, "train"), i)
 
@@ -347,6 +364,17 @@ def train_3d(config, model, optimizer, loader, epoch, output_dir, writer_dict):
             # save_debug_3d_images_all(
             #    config, meta, pred, inputs, targets_2d, heatmaps, prefix
             # )
+
+            if epoch % 1 == 0:  # 매 epoch 저장
+                torch.save({
+                    'epoch': epoch + 1,
+                    'state_dict': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                }, os.path.join(output_dir, 'dance1.pth.tar'))
+
+    
+    
+
 
 
 def validate_3d(config, model, loader, epoch, output_dir, with_ssv=False):
@@ -366,7 +394,7 @@ def validate_3d(config, model, loader, epoch, output_dir, with_ssv=False):
             input_heatmap,
         ) in enumerate(loader):
             data_time.update(time.time() - end)
-            if "panoptic" in config.DATASET.TEST_DATASET or "shelf" in config.DATASET.TEST_DATASET or "campus" in config.DATASET.TEST_DATASET:
+            if "panoptic" in config.DATASET.TEST_DATASET or "shelf" in config.DATASET.TEST_DATASET or "campus" in config.DATASET.TEST_DATASET or "dance1" in config.DATASET.TEST_DATASET:
                 if with_ssv:
                     pred, heatmaps, grid_centers = model(
                         views1=inputs,
@@ -421,8 +449,16 @@ def validate_3d(config, model, loader, epoch, output_dir, with_ssv=False):
                     prefix = "{}_{:08}_{}".format(
                         os.path.join(output_dir, "validation"), i, view_name
                     )
+
+                    # ✅ meta 재구성
+                    meta_vis = {
+                        "joints_2d": meta[k]["joints_2d"],
+                        "joints_2d_vis": meta[k]["joints_2d_vis"],
+                        "num_person": meta[k]["num_person"],
+                    }
+
                     save_debug_images_multi(
-                        config, inputs[k], meta[k], targets_2d[k], heatmaps[k], prefix
+                        config, inputs[k], meta_vis, targets_2d[k], heatmaps[k], prefix
                     )
                 prefix2 = "{}_{:03}_{:08}".format(os.path.join(output_dir, "validation"), epoch, i)
                 if not config.NETWORK.TRAIN_ONLY_2D:
@@ -485,6 +521,12 @@ def validate_3d(config, model, loader, epoch, output_dir, with_ssv=False):
             )
             logger.info(msg)
             metric = np.mean(avg_pcp)
+
+        elif "dance1" in config.DATASET.TEST_DATASET:
+            msg = "dance1 dataset 평가 루틴이 정의되어 있지 않습니다 (평가 스킵)."
+            logger.info(msg)
+            metric = None
+
 
     return metric
 

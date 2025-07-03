@@ -35,7 +35,8 @@ TRAIN_LIST = [
     "160906_band2",
     #"160906_band3",
 ]
-VAL_LIST = ["160906_pizza1", "160422_haggling1", "160906_ian5", "160906_band4"]
+#VAL_LIST = ["160906_pizza1", "160422_haggling1", "160906_ian5", "160906_band4"]
+VAL_LIST = ["160906_pizza1"]
 
 JOINTS_DEF = {
     "neck": 0,
@@ -86,6 +87,7 @@ class Panoptic(JointsDataset):
         self.limbs = LIMBS
         self.num_joints = len(JOINTS_DEF)
         ROOT = "./data"
+        self.dataset_root = cfg.DATASET.ROOT
         self.dataset_suffix = cfg.DATASET.SUFFIX if is_train else "sub"
         self.camera_num_total = cfg.DATASET.CAMERA_NUM_TOTAL
         self.cameras = cfg.DATASET.CAMERAS

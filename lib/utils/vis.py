@@ -90,16 +90,16 @@ def save_batch_image_with_joints_multi(
         for x in range(xmaps):
             if k >= nmaps:
                 break
-            for n in range(num_person[k]):
+            for n in range(num_person):
                 joints = batch_joints[k, n]
                 joints_vis = batch_joints_vis[k, n]
 
-                for joint, joint_vis in zip(joints, joints_vis):
-                    joint[0] = x * width + padding + joint[0]
-                    joint[1] = y * height + padding + joint[1]
+                for j, (joint, joint_vis) in enumerate(zip(joints, joints_vis)):
+                    joint_x = x * width + padding + joint[0]
+                    joint_y = y * height + padding + joint[1]
                     if joint_vis[0]:
                         cv2.circle(
-                            ndarr, (int(joint[0]), int(joint[1])), 2, [0, 255, 255], 2
+                            ndarr, (int(joint_x), int(joint_y)), 2, [0, 255, 255], 2
                         )
             k = k + 1
     cv2.imwrite(file_name, ndarr)
@@ -174,8 +174,8 @@ def save_debug_images_multi(config, input, meta, target, output, prefix):
     if config.DEBUG.SAVE_BATCH_IMAGES_GT:
         save_batch_image_with_joints_multi(
             input,
-            meta["joints"],
-            meta["joints_vis"],
+            meta["joints_2d"],
+            meta["joints_2d_vis"],
             meta["num_person"],
             "{}_gt.jpg".format(prefix1),
         )

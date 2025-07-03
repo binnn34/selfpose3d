@@ -1,0 +1,118 @@
+﻿AUTO_RESUME: true
+CUDNN:
+  BENCHMARK: true
+  DETERMINISTIC: false
+  ENABLED: true
+
+DATA_DIR: ''
+GPUS: [0]
+OUTPUT_DIR: 'D:/SelfPose3d/pseudo_labels/kpt2d_hrnet/3images'  # 3장 실험용 결과 폴더
+LOG_DIR: 'log_hrnet_test3'
+WORKERS: 2
+PRINT_FREQ: 1
+RANK: 0
+
+DATASET:
+  COLOR_RGB: true
+  DATASET: 'coco'
+  DATA_FORMAT: jpg
+  FLIP: false
+  NUM_JOINTS_HALF_BODY: 8
+  PROB_HALF_BODY: 0.3
+  ROOT: 'D:/SelfPose3d/frames_test/images/val'  # 3장 이미지가 저장된 폴더
+  ROT_FACTOR: 45
+  SCALE_FACTOR: 0.35
+  TEST_SET: 'val'
+  TRAIN_SET: 'train'
+  HYBRID_JOINTS_TYPE: false
+
+MODEL:
+  INIT_WEIGHTS: true
+  NAME: pose_hrnet
+  NUM_JOINTS: 17
+  PRETRAINED: 'models/pytorch/imagenet/hrnet_w48-8ef0771d.pth'
+  TARGET_TYPE: gaussian
+  IMAGE_SIZE: [288, 384]
+  HEATMAP_SIZE: [72, 96]
+  SIGMA: 3
+  EXTRA:
+    PRETRAINED_LAYERS:
+      - 'conv1'
+      - 'bn1'
+      - 'conv2'
+      - 'bn2'
+      - 'layer1'
+      - 'transition1'
+      - 'stage2'
+      - 'transition2'
+      - 'stage3'
+      - 'transition3'
+      - 'stage4'
+    FINAL_CONV_KERNEL: 1
+    STAGE2:
+      NUM_MODULES: 1
+      NUM_BRANCHES: 2
+      BLOCK: BASIC
+      NUM_BLOCKS: [4, 4]
+      NUM_CHANNELS: [48, 96]
+      FUSE_METHOD: SUM
+    STAGE3:
+      NUM_MODULES: 4
+      NUM_BRANCHES: 3
+      BLOCK: BASIC
+      NUM_BLOCKS: [4, 4, 4]
+      NUM_CHANNELS: [48, 96, 192]
+      FUSE_METHOD: SUM
+    STAGE4:
+      NUM_MODULES: 3
+      NUM_BRANCHES: 4
+      BLOCK: BASIC
+      NUM_BLOCKS: [4, 4, 4, 4]
+      NUM_CHANNELS: [48, 96, 192, 384]
+      FUSE_METHOD: SUM
+
+LOSS:
+  USE_TARGET_WEIGHT: true
+  USE_DIFFERENT_JOINTS_WEIGHT: false
+
+TRAIN:
+  BATCH_SIZE_PER_GPU: 8
+  SHUFFLE: true
+  BEGIN_EPOCH: 0
+  END_EPOCH: 210
+  OPTIMIZER: adam
+  LR: 0.001
+  LR_FACTOR: 0.1
+  LR_STEP: [170, 200]
+  WD: 0.0001
+  GAMMA1: 0.99
+  GAMMA2: 0.0
+  MOMENTUM: 0.9
+  NESTEROV: false
+
+TEST:
+  JSON_FILE: 'D:/SelfPose3d/pseudo_labels/pseudo_bboxes_yolov5_converted2.json'
+  COCO_BBOX_FILE: 'D:/SelfPose3d/pseudo_labels/pseudo_bboxes_yolov5_converted2.json'
+  GT_JSON: 'D:/SelfPose3d/pseudo_labels/pseudo_bboxes_yolov5_converted.json'
+  IMG_DIR: 'D:/SelfPose3d/frames_test/images/val'
+  BATCH_SIZE_PER_GPU: 1
+  BBOX_THRE: 0.0
+  IMAGE_THRE: 0.0
+  IN_VIS_THRE: 0.0
+  MODEL_FILE: 'models/pose_hrnet_w48_384x288.pth'
+  NMS_THRE: 1.0
+  OKS_THRE: 0.5
+  USE_GT_BBOX: false
+  FLIP_TEST: false
+  POST_PROCESS: false
+  SHIFT_HEATMAP: true
+  SOFT_NMS: false
+  DO_EVAL: true
+
+DEBUG:
+  DEBUG: true
+  SAVE_BATCH_IMAGES_GT: true
+  SAVE_BATCH_IMAGES_PRED: true
+  SAVE_HEATMAPS_GT: true
+  SAVE_HEATMAPS_PRED: true
+

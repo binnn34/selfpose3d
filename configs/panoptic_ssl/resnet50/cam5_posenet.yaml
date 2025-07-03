@@ -5,7 +5,7 @@ CUDNN:
 BACKBONE_MODEL: 'pose_resnet'
 MODEL: 'multi_person_posenet_ssv'
 DATA_DIR: ''
-GPUS: '0,1'
+GPUS: ''
 OUTPUT_DIR: './results/adaptOR3D'
 LOG_DIR: './results/adaptOR3D'
 WORKERS: 6
@@ -26,7 +26,7 @@ DATASET:
   DATA_AUGMENTATION: False
   SUFFIX: "pseudo_hrnet_soft_9videos"
   FLIP: False
-  ROOT: 'data/panoptic-toolbox/data/' # 'data/panoptic/'
+  ROOT: 'D:/SelfPose3d/data/panoptic-toolbox/data/' # 'data/panoptic/'
   ROT_FACTOR1: 45
   ROT_FACTOR2: 45
   SCALE_FACTOR1: 0.35
@@ -89,7 +89,8 @@ TRAIN:
   LR_STEP: [5,7]
   L1_EPOCH: 5
 TEST:
-  MODEL_FILE: 'model_best.pth.tar'
+  #MODEL_FILE: 'model_best.pth.tar'
+  MODEL_FILE : ''
   BATCH_SIZE: 4
 DEBUG:
   DEBUG: true

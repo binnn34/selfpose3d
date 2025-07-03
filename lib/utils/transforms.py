@@ -64,14 +64,23 @@ def get_affine_transform(center,
                          output_size,
                          shift=np.array([0, 0], dtype=np.float32),
                          inv=0):
-    if isinstance(scale, torch.Tensor):
-        scale = np.array(scale.cpu())
+    # Tensor → numpy로 변환
     if isinstance(center, torch.Tensor):
-        center = np.array(center.cpu())    
+        center = center.detach().cpu().numpy()
+    center = np.array(center[:2])
+    
+    if isinstance(scale, torch.Tensor):
+        scale = scale.detach().cpu().numpy()
     if isinstance(rot, torch.Tensor):
-        rot = np.array(rot.cpu())
-    if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
-        scale = np.array([scale, scale])
+        rot = rot.detach().cpu().numpy()
+
+    # scale을 배열로 정리
+    if isinstance(scale, (int, float)):
+        scale = np.array([scale, scale], dtype=np.float32)
+    elif isinstance(scale, (list, tuple)):
+        scale = np.array(scale, dtype=np.float32)
+    elif isinstance(scale, np.ndarray):
+        scale = scale.astype(np.float32)
 
     scale_tmp = scale * 200.0
     src_w, src_h = scale_tmp[0], scale_tmp[1]
@@ -87,7 +96,7 @@ def get_affine_transform(center,
 
     src = np.zeros((3, 2), dtype=np.float32)
     dst = np.zeros((3, 2), dtype=np.float32)
-    src[0, :] = center + scale_tmp * shift     # x,y
+    src[0, :] = center + scale_tmp * shift
     src[1, :] = center + src_dir + scale_tmp * shift
     dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
     dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5]) + dst_dir
@@ -101,6 +110,7 @@ def get_affine_transform(center,
         trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
 
     return trans
+
 
 
 def affine_transform(pt, t):

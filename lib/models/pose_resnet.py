@@ -213,53 +213,32 @@ class PoseResNet(nn.Module):
             pretrained_state_dict = torch.load(pretrained)
             logger.info("=> loading pretrained models {}".format(pretrained))
 
+            # Remove final_layer keys if they mismatch
             model_state_dict = self.state_dict()
-            for k, v in pretrained_state_dict.items():
-                if "final_layer" in k:
-                    if pretrained_state_dict[k].shape[0] != model_state_dict[k].shape[0]:
-                        pretrained_state_dict[k] = pretrained_state_dict[k][mapping]
-                    else:
-                        pretrained_state_dict[k] = torch.zeros_like(model_state_dict[k])
+            for k in list(pretrained_state_dict.keys()):
+                if 'final_layer' in k:
+                    logger.info(f"Removing key {k} from pretrained weights due to mismatch")
+                    del pretrained_state_dict[k]
+
             m, v = self.load_state_dict(pretrained_state_dict, strict=False)
             logger.info("=> missing keys in the backbone {}".format(m))
             logger.info("=> invalid keys in the backbone {}".format(v))
-
-            if len(m) > 0 and len(v) > 0:
-                logger.info("=> init deconv weights from normal distribution")
-                for name, m in self.deconv_layers.named_modules():
-                    if isinstance(m, nn.ConvTranspose2d):
-                        logger.info("=> init {}.weight as normal(0, 0.001)".format(name))
-                        logger.info("=> init {}.bias as 0".format(name))
-                        nn.init.normal_(m.weight, std=0.001)
-                        if self.deconv_with_bias:
-                            nn.init.constant_(m.bias, 0)
-                    elif isinstance(m, nn.BatchNorm2d):
-                        logger.info("=> init {}.weight as 1".format(name))
-                        logger.info("=> init {}.bias as 0".format(name))
-                        nn.init.constant_(m.weight, 1)
-                        nn.init.constant_(m.bias, 0)
-                logger.info("=> init final conv weights from normal distribution")
-                for m in self.final_layer.modules():
-                    if isinstance(m, nn.Conv2d):
-                        # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                        logger.info("=> init {}.weight as normal(0, 0.001)".format(name))
-                        logger.info("=> init {}.bias as 0".format(name))
-                        nn.init.normal_(m.weight, std=0.001)
-                        nn.init.constant_(m.bias, 0)
         else:
             logger.info("=> init weights from normal distribution")
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                    nn.init.normal_(m.weight, std=0.001)
-                    # nn.init.constant_(m.bias, 0)
-                elif isinstance(m, nn.BatchNorm2d):
-                    nn.init.constant_(m.weight, 1)
+
+        # Initialize layers
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
+                if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-                elif isinstance(m, nn.ConvTranspose2d):
-                    nn.init.normal_(m.weight, std=0.001)
-                    if self.deconv_with_bias:
-                        nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.ConvTranspose2d):
+                nn.init.normal_(m.weight, std=0.001)
+                if self.deconv_with_bias:
+                    nn.init.constant_(m.bias, 0)
 
 
 resnet_spec = {

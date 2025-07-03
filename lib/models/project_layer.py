@@ -6,6 +6,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 import utils.cameras as cameras
 from utils.transforms import get_affine_transform as get_transform
@@ -61,18 +62,21 @@ class ProjectLayer(nn.Module):
                     grid = self.compute_grid(grid_size, grid_center[i], cube_size, device=device)
                 grids[i:i + 1] = grid
                 for c in range(n):
-                    center = meta[c]['center'][i]
+                    center = meta[i]['center'][c] if c < len(meta[i]['center']) else meta[i]['center'][0]
+                    if not isinstance(center, (list, tuple, np.ndarray)):
+                        center = [center, center]  # float이면 리스트로 변환
+                    width, height = center[0] * 2, center[1] * 2
+
                     scale = meta[c]['scale'][i]
                     rotation = meta[c]['rotation'][i]
 
-                    width, height = center * 2
+
                     trans = torch.as_tensor(
                         get_transform(center, scale, rotation, self.img_size),
                         dtype=torch.float,
                         device=device)
-                    cam = {}
-                    for k, v in meta[c]['camera'].items():
-                        cam[k] = v[i]
+                    cam = meta[c]['camera']
+
                     xy = cameras.project_pose(grid, cam)
 
                     bounding[i, 0, 0, :, c] = (xy[:, 0] >= 0) & (xy[:, 1] >= 0) & (xy[:, 0] < width) & (

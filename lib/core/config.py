@@ -124,7 +124,11 @@ config.LOSS.USE_DIFFERENT_JOINTS_WEIGHT = False
 
 # DATASET related params
 config.DATASET = edict()
+config.DATASET.SEQUENCE = ''
 config.DATASET.ROOT = '../data/h36m/'
+config.DATASET.TRAIN_2D_FILE = ''
+config.DATASET.TEST_2D_FILE = ''
+config.DATASET.DETECTION_FILE = ''
 config.DATASET.TRAIN_DATASET = 'mixed_dataset'
 config.DATASET.TEST_DATASET = 'multi_view_h36m'
 config.DATASET.TRAIN_SUBSET = 'train'

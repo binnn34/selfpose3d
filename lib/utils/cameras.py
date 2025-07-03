@@ -37,6 +37,24 @@ def project_point_radial(x, R, T, f, c, k, p):
     Returns
         ypixel.T: Nx2 points in pixel space
     """
+    # print("x shape:", x.shape)
+    # print("R shape:", R.shape)
+    # print("T shape:", T.shape)
+    # print("torch.t(x) shape:", torch.t(x).shape)
+    # print("=== DEBUG T shape:", T.shape)
+    # print("torch.t(x) - T shape:", (torch.t(x) - T).shape)
+
+    # print("x shape:", x.shape)
+    # print("R shape:", R.shape)
+    # print("T shape before view:", T.shape)
+    T = T.view(3, 1)  # 🔧 핵심 수정
+    # print("T shape after view:", T.shape)
+    k = k.view(3, 1)
+    p = p.view(2, 1)
+    # print("K shape:", k.shape)
+    # print("P shape:", p.shape)
+    
+
     n = x.shape[0]
     xcam = torch.mm(R, torch.t(x) - T)
     y = xcam[:2] / (xcam[2] + 1e-5)
