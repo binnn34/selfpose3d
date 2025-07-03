@@ -39,11 +39,15 @@ Pipfile.lock
 data/
 frames/
 frames_test/
+HRNet-Human-Pose-Estimation/models/
 results/
+models/
 yolov5/
 selfpose3d_models_pseudo_labels/
+
 videoplayback.mp4
 yolov5_2d_generation_json.py
 yolov5s.pt
 rename.py
 pseudo_labels/**/*.jpg
+pseudo_labels/*.json
