@@ -50,4 +50,6 @@ yolov5_2d_generation_json.py
 yolov5s.pt
 rename.py
 pseudo_labels/**/*.jpg
+pseudo_labels/**/*.pkl
+pseudo_labels/**/*.json
 pseudo_labels/*.json
